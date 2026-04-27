@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "sync-assets": "rm -rf public/fonts public/ds-assets && cp -r node_modules/@nous-research/ui/dist/fonts public/fonts && cp -r node_modules/@nous-research/ui/dist/assets public/ds-assets",
+    "sync-assets": "node -e \"const fs=require('fs'); const p=require('path'); const rm=(x)=>fs.rmSync(x,{recursive:true,force:true}); const cp=(a,b)=>fs.cpSync(a,b,{recursive:true}); const pub=p.join(process.cwd(),'public'); rm(p.join(pub,'fonts')); rm(p.join(pub,'ds-assets')); cp(p.join(process.cwd(),'node_modules','@nous-research','ui','dist','fonts'),p.join(pub,'fonts')); cp(p.join(process.cwd(),'node_modules','@nous-research','ui','dist','assets'),p.join(pub,'ds-assets'));\"",
     "predev": "npm run sync-assets",
     "prebuild": "npm run sync-assets",
     "dev": "vite",
