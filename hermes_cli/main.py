@@ -1049,21 +1049,26 @@ def _launch_tui(
     if provider:
         env["HERMES_TUI_PROVIDER"] = provider
         env["HERMES_INFERENCE_PROVIDER"] = provider
-    # Guarantee an 8GB V8 heap + exposed GC for the TUI. Default node cap is
+    # Guarantee an 8GB V8 heap for the TUI. Default node cap is
     # ~1.5–4GB depending on version and can fatal-OOM on long sessions with
-    # large transcripts / reasoning blobs. Token-level merge: respect any
-    # user-supplied --max-old-space-size (they may have set it higher) and
-    # avoid duplicating --expose-gc.
+    # large transcripts / reasoning blobs. Respect any user-supplied
+    # --max-old-space-size, but keep --expose-gc out of NODE_OPTIONS because
+    # Node rejects that flag there.
     _tokens = env.get("NODE_OPTIONS", "").split()
+    _tokens = [t for t in _tokens if t != "--expose-gc"]
     if not any(t.startswith("--max-old-space-size=") for t in _tokens):
         _tokens.append("--max-old-space-size=8192")
-    if "--expose-gc" not in _tokens:
-        _tokens.append("--expose-gc")
     env["NODE_OPTIONS"] = " ".join(_tokens)
     if resume_session_id:
         env["HERMES_TUI_RESUME"] = resume_session_id
 
     argv, cwd = _make_tui_argv(tui_dir, tui_dev)
+    argv0 = Path(argv[0]).name.lower() if argv else ""
+    if (
+        argv0 in {"node", "node.exe", "nodejs", "nodejs.exe"}
+        and "--expose-gc" not in argv
+    ):
+        argv.insert(1, "--expose-gc")
     try:
         code = subprocess.call(argv, cwd=str(cwd), env=env)
     except KeyboardInterrupt:

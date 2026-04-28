@@ -145,6 +145,8 @@ def test_launch_tui_exports_model_and_provider(monkeypatch, main_mod):
     assert env["HERMES_INFERENCE_MODEL"] == "nous/hermes-test"
     assert env["HERMES_TUI_PROVIDER"] == "nous"
     assert env["HERMES_INFERENCE_PROVIDER"] == "nous"
+    assert "--expose-gc" not in env.get("NODE_OPTIONS", "").split()
+    assert captured["argv"] == ["node", "--expose-gc", "dist/entry.js"]
 
 
 def test_print_tui_exit_summary_includes_resume_and_token_totals(monkeypatch, capsys):
