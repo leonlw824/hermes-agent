@@ -1123,21 +1123,22 @@ def _launch_tui(
     if provider:
         env["HERMES_TUI_PROVIDER"] = provider
         env["HERMES_INFERENCE_PROVIDER"] = provider
-    # Guarantee an 8GB V8 heap + exposed GC for the TUI. Default node cap is
+    # Guarantee an 8GB V8 heap for the TUI. Default node cap is
     # ~1.5–4GB depending on version and can fatal-OOM on long sessions with
     # large transcripts / reasoning blobs. Token-level merge: respect any
-    # user-supplied --max-old-space-size (they may have set it higher) and
-    # avoid duplicating --expose-gc.
-    _tokens = env.get("NODE_OPTIONS", "").split()
+    # user-supplied --max-old-space-size (they may have set it higher).
+    # Node rejects --expose-gc in NODE_OPTIONS, so strip inherited copies
+    # and pass it as a direct node argv only when we launch node ourselves.
+    _tokens = [t for t in env.get("NODE_OPTIONS", "").split() if t != "--expose-gc"]
     if not any(t.startswith("--max-old-space-size=") for t in _tokens):
         _tokens.append("--max-old-space-size=8192")
-    if "--expose-gc" not in _tokens:
-        _tokens.append("--expose-gc")
     env["NODE_OPTIONS"] = " ".join(_tokens)
     if resume_session_id:
         env["HERMES_TUI_RESUME"] = resume_session_id
 
     argv, cwd = _make_tui_argv(tui_dir, tui_dev)
+    if argv and Path(argv[0]).name in {"node", "node.exe"} and "--expose-gc" not in argv[1:]:
+        argv = [argv[0], "--expose-gc", *argv[1:]]
     code: Optional[int] = None
     try:
         try:
