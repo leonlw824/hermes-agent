@@ -41,13 +41,12 @@ MANIFEST_FILE = SKILLS_DIR / ".bundled_manifest"
 def _get_bundled_dir() -> Path:
     """Locate the bundled skills/ directory.
 
-    Checks HERMES_BUNDLED_SKILLS env var first (set by Nix wrapper),
-    then falls back to the relative path from this source file.
+    Only active when HERMES_BUNDLED_SKILLS env var is explicitly set.
     """
     env_override = os.getenv("HERMES_BUNDLED_SKILLS")
     if env_override:
         return Path(env_override)
-    return Path(__file__).parent.parent / "skills"
+    return Path("/_hermes_disabled_/bundled-skills")
 
 
 def _read_manifest() -> Dict[str, str]:

@@ -10,7 +10,7 @@ import tools.mcp_tool
 
 
 def test_display_toolset_name_strips_legacy_suffix():
-    assert banner._display_toolset_name("homeassistant_tools") == "homeassistant"
+    assert banner._display_toolset_name("yuanbao_tools") == "yuanbao"
     assert banner._display_toolset_name("honcho_tools") == "honcho"
     assert banner._display_toolset_name("web_tools") == "web"
 
@@ -35,7 +35,7 @@ def test_build_welcome_banner_uses_normalized_toolset_names():
             return_value=(
                 ["web"],
                 [
-                    {"name": "homeassistant", "tools": ["ha_call_service"]},
+                    {"name": "yuanbao", "tools": ["yb_query_group_info"]},
                     {"name": "honcho", "tools": ["honcho_conclude"]},
                 ],
             ),
@@ -62,10 +62,10 @@ def test_build_welcome_banner_uses_normalized_toolset_names():
         )
 
     output = console.export_text()
-    assert "homeassistant:" in output
+    assert "yuanbao:" in output
     assert "honcho:" in output
     assert "web:" in output
-    assert "homeassistant_tools:" not in output
+    assert "yuanbao_tools:" not in output
     assert "honcho_tools:" not in output
     assert "web_tools:" not in output
 

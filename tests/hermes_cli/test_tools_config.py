@@ -79,42 +79,6 @@ def test_get_platform_tools_default_telegram_includes_messaging():
     assert "messaging" in enabled
 
 
-def test_get_platform_tools_homeassistant_platform_keeps_homeassistant_toolset():
-    enabled = _get_platform_tools({}, "homeassistant")
-
-    assert "homeassistant" in enabled
-
-
-def test_get_platform_tools_homeassistant_toolset_enabled_for_cron_when_hass_token_set(monkeypatch):
-    """HA toolset is runtime-gated by check_fn (requires HASS_TOKEN).
-
-    When HASS_TOKEN is set, the user has explicitly opted in — _DEFAULT_OFF_TOOLSETS
-    shouldn't also strip HA from platforms (like cron) that run through
-    _get_platform_tools without an explicit saved toolset list.
-
-    Regression guard for Norbert's HA cron breakage after #14798 made cron
-    honor per-platform tool config.
-    """
-    monkeypatch.setenv("HASS_TOKEN", "fake-test-token")
-
-    cron_enabled = _get_platform_tools({}, "cron")
-    assert "homeassistant" in cron_enabled
-    # moa must stay off — the original goal of #14798
-    assert "moa" not in cron_enabled
-
-    cli_enabled = _get_platform_tools({}, "cli")
-    assert "homeassistant" in cli_enabled
-
-
-def test_get_platform_tools_homeassistant_toolset_off_for_cron_when_hass_token_missing(monkeypatch):
-    """Without HASS_TOKEN, HA stays off by default — preserves #14798's behavior
-    for users who never configured HA."""
-    monkeypatch.delenv("HASS_TOKEN", raising=False)
-
-    cron_enabled = _get_platform_tools({}, "cron")
-    assert "homeassistant" not in cron_enabled
-
-
 def test_get_platform_tools_preserves_explicit_empty_selection():
     config = {"platform_toolsets": {"cli": []}}
 
@@ -136,17 +100,6 @@ def test_apply_toolset_change_from_default_does_not_enable_default_off_toolsets(
     assert "memory" not in saved
     assert "terminal" in saved
     assert saved.isdisjoint(_DEFAULT_OFF_TOOLSETS)
-
-
-def test_apply_toolset_change_can_enable_default_off_toolset_from_default():
-    config = {}
-
-    with patch("hermes_cli.tools_config.save_config"):
-        _apply_toolset_change(config, "cli", ["homeassistant"], "enable")
-
-    saved = set(config["platform_toolsets"]["cli"])
-    assert "homeassistant" in saved
-    assert "terminal" in saved
 
 
 def test_get_platform_tools_handles_null_platform_toolsets():
@@ -360,8 +313,6 @@ def test_save_platform_tools_does_not_preserve_platform_default_toolsets():
 
     # Tools the user unchecked must NOT be present
     assert "image_gen" not in saved
-    assert "homeassistant" not in saved
-    assert "moa" not in saved
 
 
 def test_save_platform_tools_does_not_preserve_hermes_telegram():
@@ -773,62 +724,6 @@ def test_get_platform_tools_second_pass_skips_fully_claimed_toolsets():
     assert "search" not in enabled
 
 
-def test_get_platform_tools_discord_both_off_by_default():
-    """Both `discord` and `discord_admin` are opt-in via `hermes tools`,
-    even on the Discord platform itself.  Users shouldn't auto-inherit 19
-    extra tools just because DISCORD_BOT_TOKEN is set."""
-    enabled = _get_platform_tools({}, "discord")
-    assert "discord" not in enabled
-    assert "discord_admin" not in enabled
-
-
-def test_discord_toolsets_in_configurable_toolsets():
-    keys = {ts_key for ts_key, _, _ in CONFIGURABLE_TOOLSETS}
-    assert "discord" in keys
-    assert "discord_admin" in keys
-
-
-def test_discord_toolsets_in_default_off():
-    assert "discord" in _DEFAULT_OFF_TOOLSETS
-    assert "discord_admin" in _DEFAULT_OFF_TOOLSETS
-
-
-def test_discord_toolsets_not_available_on_other_platforms():
-    """Platform-scoping: discord / discord_admin should not appear on CLI,
-    Telegram, etc. — not even as an opt-in."""
-    from hermes_cli.tools_config import _toolset_allowed_for_platform
-    for plat in ["cli", "telegram", "slack", "whatsapp", "signal"]:
-        assert not _toolset_allowed_for_platform("discord", plat), (
-            f"`discord` toolset leaked onto {plat}"
-        )
-        assert not _toolset_allowed_for_platform("discord_admin", plat), (
-            f"`discord_admin` toolset leaked onto {plat}"
-        )
-    assert _toolset_allowed_for_platform("discord", "discord")
-    assert _toolset_allowed_for_platform("discord_admin", "discord")
-
-
-def test_discord_toolsets_user_enabled_are_honored():
-    """When the user opts in via `hermes tools`, the toolset appears."""
-    config = {"platform_toolsets": {"discord": ["web", "terminal", "discord"]}}
-    enabled = _get_platform_tools(config, "discord")
-    assert "discord" in enabled
-    assert "discord_admin" not in enabled
-
-
-def test_save_platform_tools_strips_restricted_toolsets():
-    """Hand-edited or all-platforms checklist with `discord` selected for
-    Telegram must be stripped at save time."""
-    from hermes_cli.tools_config import _save_platform_tools
-    config = {}
-    _save_platform_tools(config, "telegram", {"web", "terminal", "discord", "discord_admin"})
-    saved = config["platform_toolsets"]["telegram"]
-    assert "discord" not in saved
-    assert "discord_admin" not in saved
-    assert "web" in saved
-    assert "terminal" in saved
-
-
 def test_get_platform_tools_feishu_includes_doc_and_drive():
     enabled = _get_platform_tools({}, "feishu")
     assert "feishu_doc" in enabled
@@ -842,12 +737,7 @@ def test_get_platform_tools_feishu_tools_not_on_other_platforms():
         assert "feishu_drive" not in enabled, f"feishu_drive leaked onto {plat}"
 
 
-def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():
-    """Bundled plugins (plugins/spotify) share their toolset key with the
-    built-in CONFIGURABLE_TOOLSETS entry. The effective list must not list
-    them twice — otherwise `hermes tools` → "reconfigure existing" shows
-    the same toolset two rows in a row.
-    """
+def test_get_effective_configurable_toolsets_no_duplicates():
     from hermes_cli.tools_config import _get_effective_configurable_toolsets
 
     all_ts = _get_effective_configurable_toolsets()
@@ -856,8 +746,3 @@ def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():
         f"duplicate toolset keys in effective list: "
         f"{[k for k in keys if keys.count(k) > 1]}"
     )
-    # Spotify specifically — the bug that motivated the dedupe.
-    spotify_rows = [t for t in all_ts if t[0] == "spotify"]
-    assert len(spotify_rows) == 1, spotify_rows
-    # Built-in label wins over the plugin label.
-    assert spotify_rows[0][1] == "🎵 Spotify"

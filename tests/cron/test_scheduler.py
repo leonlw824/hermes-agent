@@ -862,10 +862,8 @@ class TestRunJobSessionPersistence:
         kwargs = mock_agent_cls.call_args.kwargs
         # Resolution happened — not None, is a list.
         assert isinstance(kwargs["enabled_toolsets"], list)
-        # The cron default is _HERMES_CORE_TOOLS with _DEFAULT_OFF_TOOLSETS
-        # (``moa``, ``homeassistant``, ``rl``) removed. The most important
-        # invariant: ``moa`` is NOT in the default cron toolset, so a cron
-        # run cannot accidentally spin up frontier models.
+        # The cron default is all _HERMES_CORE_TOOLS.
+        # ``moa`` was removed from the codebase entirely.
         assert "moa" not in kwargs["enabled_toolsets"]
 
     def test_run_job_per_job_toolsets_win_over_platform_config(self, tmp_path):

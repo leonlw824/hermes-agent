@@ -592,16 +592,16 @@ class TestGetBundledDir:
         assert _get_bundled_dir() == custom_dir
 
     def test_default_without_env_var(self, monkeypatch):
-        """Without the env var, falls back to relative path from __file__."""
+        """Without the env var, returns disabled-sync path."""
         monkeypatch.delenv("HERMES_BUNDLED_SKILLS", raising=False)
         result = _get_bundled_dir()
-        assert result.name == "skills"
+        assert not result.exists()
 
     def test_env_var_empty_string_ignored(self, monkeypatch):
-        """Empty HERMES_BUNDLED_SKILLS should fall back to default."""
+        """Empty HERMES_BUNDLED_SKILLS should return disabled-sync path."""
         monkeypatch.setenv("HERMES_BUNDLED_SKILLS", "")
         result = _get_bundled_dir()
-        assert result.name == "skills"
+        assert not result.exists()
 
 
 class TestResetBundledSkill:

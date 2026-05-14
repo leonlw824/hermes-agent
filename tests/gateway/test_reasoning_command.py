@@ -406,4 +406,6 @@ class TestReasoningCommand:
 
         assert result["final_response"] == "ok"
         assert _CapturingAgent.last_init is not None
-        assert "homeassistant" in set(_CapturingAgent.last_init["enabled_toolsets"])
+        enabled_toolsets = set(_CapturingAgent.last_init["enabled_toolsets"])
+        assert "homeassistant" not in enabled_toolsets
+        assert "web" in enabled_toolsets
