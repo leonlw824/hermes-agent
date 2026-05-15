@@ -8,8 +8,15 @@ ENV PYTHONUNBUFFERED=1
 # install survives the /opt/data volume overlay at runtime.
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/.playwright
 
-# Use Debian mirror for China
+# ---------- China mirror config ----------
+# Debian apt mirror
 RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources
+# npm mirror (global, picked up by all npm install subprocesses)
+ENV npm_config_registry=https://registry.npmmirror.com
+# Playwright Chromium download mirror
+ENV PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright/
+# uv / pip mirror
+ENV UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 
 # Install system dependencies in one layer, clear APT cache
 # tini reaps orphaned zombie processes (MCP stdio subprocesses, git, bun, etc.)
@@ -63,8 +70,10 @@ RUN chmod -R a+rX /opt/hermes
 # If HERMES_UID is unset, the entrypoint drops to the default hermes user (10000).
 
 # ---------- Python virtualenv ----------
+# Trimmed dependency set — excludes homeassistant and rl (toolset definitions
+# already removed from the source tree).
 RUN uv venv && \
-    uv pip install --no-cache-dir -e ".[all]"
+    uv pip install --no-cache-dir -e ".[modal,daytona,vercel,messaging,cron,cli,tts-premium,slack,pty,honcho,mcp,sms,acp,voice,dingtalk,feishu,google,mistral,bedrock,web]"
 
 # ---------- Runtime ----------
 ENV HERMES_WEB_DIST=/opt/hermes/hermes_cli/web_dist

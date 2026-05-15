@@ -19,6 +19,15 @@ fi
 IMAGE_NAME="iotek-hermes-agent"
 
 echo "Building Docker image: $IMAGE_NAME:$VERSION"
-docker build -t "$IMAGE_NAME:$VERSION" -t "$IMAGE_NAME:latest" "$SCRIPT_DIR"
+echo "Start: $(date '+%H:%M:%S')"
 
-echo "Done: $IMAGE_NAME:$VERSION"
+# DOCKER_BUILDKIT=1 enables parallel stage builds and layer caching
+export DOCKER_BUILDKIT=1
+
+docker build \
+    -t "$IMAGE_NAME:$VERSION" \
+    -t "$IMAGE_NAME:latest" \
+    "$SCRIPT_DIR"
+
+echo "Done: $(date '+%H:%M:%S')"
+echo "Image: $IMAGE_NAME:$VERSION"
