@@ -72,10 +72,10 @@ RUN chmod -R a+rX /opt/hermes
 # ---------- Python virtualenv ----------
 # Trimmed dependency set — excludes homeassistant and rl (toolset definitions
 # already removed from the source tree).
-# Override pyproject.toml [tool.uv] exclude-newer — the Docker image is a
-# self-contained deployment whose packages are locked at build time.
-ENV UV_EXCLUDE_NEWER="2099-01-01T00:00:00Z"
-RUN uv venv && \
+# Strip [tool.uv] exclude-newer — the Docker image is a self-contained
+# deployment whose packages are locked at build time.
+RUN sed -i '/^\[tool\.uv\]/,/^$/d' pyproject.toml && \
+    uv venv && \
     uv pip install --no-cache-dir -e ".[modal,daytona,vercel,messaging,cron,cli,tts-premium,slack,pty,honcho,mcp,sms,acp,voice,dingtalk,feishu,google,mistral,bedrock,web]"
 
 # ---------- Runtime ----------
