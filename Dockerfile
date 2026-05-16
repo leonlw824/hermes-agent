@@ -13,8 +13,8 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/.playwright
 RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources
 # npm mirror (global, picked up by all npm install subprocesses)
 ENV npm_config_registry=https://registry.npmmirror.com
-# Playwright Chromium download mirror
-ENV PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright/
+# Playwright Chromium: download directly from Microsoft CDN
+# (npmmirror.com playwright mirror is often out of date)
 # uv / pip mirror
 ENV UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 
