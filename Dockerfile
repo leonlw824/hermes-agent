@@ -74,7 +74,7 @@ RUN chmod -R a+rX /opt/hermes
 # already removed from the source tree).
 # Override pyproject.toml [tool.uv] exclude-newer — the Docker image is a
 # self-contained deployment whose packages are locked at build time.
-ENV UV_EXCLUDE_NEWER=""
+ENV UV_EXCLUDE_NEWER="2099-01-01T00:00:00Z"
 RUN uv venv && \
     uv pip install --no-cache-dir -e ".[modal,daytona,vercel,messaging,cron,cli,tts-premium,slack,pty,honcho,mcp,sms,acp,voice,dingtalk,feishu,google,mistral,bedrock,web]"
 
