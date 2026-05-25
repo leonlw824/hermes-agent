@@ -73,3 +73,14 @@ models-dev-upstream/
 hermes_cli/tui_dist/*
 hermes_cli/scripts/
 docs/superpowers/*
+/docs/agent-platform-solution.md
+/.idea/hermes-agent.iml
+/docs/hermes-centralized-local-agent-platform-plan.md
+/docs/hermes-official-getting-started-analysis-zh.md
+/.idea/misc.xml
+/.idea/prettier.xml
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.claude/settings.local.json
+/.idea/vcs.xml
+/.idea/workspace.xml

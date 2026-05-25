@@ -1,5 +1,4 @@
 FROM ghcr.io/astral-sh/uv:0.11.6-python3.13-trixie@sha256:b3c543b6c4f23a5f2df22866bd7857e5d304b67a564f4feab6ac22044dde719b AS uv_source
-FROM tianon/gosu:1.19-trixie@sha256:3b176695959c71e123eb390d427efc665eeb561b1540e82679c15e992006b8b9 AS gosu_source
 FROM debian:13.4
 
 # Disable Python stdout buffering to ensure logs are printed immediately
@@ -9,18 +8,27 @@ ENV PYTHONUNBUFFERED=1
 # install survives the /opt/data volume overlay at runtime.
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/.playwright
 
+# ---------- China mirror config ----------
+# Debian apt mirror
+RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources
+# npm mirror (global, picked up by all npm install subprocesses)
+ENV npm_config_registry=https://registry.npmmirror.com
+# Playwright Chromium: download directly from Microsoft CDN
+# (npmmirror.com playwright mirror is often out of date)
+# uv / pip mirror
+ENV UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+
 # Install system dependencies in one layer, clear APT cache
 # tini reaps orphaned zombie processes (MCP stdio subprocesses, git, bun, etc.)
 # that would otherwise accumulate when hermes runs as PID 1. See #15012.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    build-essential curl nodejs npm python3 ripgrep ffmpeg gcc python3-dev libffi-dev procps git openssh-client docker-cli tini && \
+    build-essential curl nodejs npm python3 ripgrep ffmpeg gcc python3-dev libffi-dev procps git openssh-client docker-cli gosu tini && \
     rm -rf /var/lib/apt/lists/*
 
 # Non-root user for runtime; UID can be overridden via HERMES_UID at runtime
 RUN useradd -u 10000 -m -d /opt/data hermes
 
-COPY --chmod=0755 --from=gosu_source /gosu /usr/local/bin/
 COPY --chmod=0755 --from=uv_source /usr/local/bin/uv /usr/local/bin/uvx /usr/local/bin/
 
 WORKDIR /opt/hermes
@@ -49,11 +57,11 @@ COPY ui-tui/packages/hermes-ink/ ui-tui/packages/hermes-ink/
 # fails with EACCES (node_modules/ is root-owned from build time).
 ENV npm_config_install_links=false
 
-RUN npm install --prefer-offline --no-audit && \
-    npx playwright install --with-deps chromium --only-shell && \
-    (cd web && npm install --prefer-offline --no-audit) && \
-    (cd ui-tui && npm install --prefer-offline --no-audit) && \
-    npm cache clean --force
+RUN npm install --no-audit && \
+    (cd web && npm install --no-audit) && \
+    (cd ui-tui && npm install --no-audit)
+
+RUN npx playwright install --with-deps chromium --only-shell
 
 # ---------- Layer-cached Python dependency install ----------
 # Copy only pyproject.toml + uv.lock so the Python dep resolve + wheel
