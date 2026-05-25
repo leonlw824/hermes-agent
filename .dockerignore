@@ -23,6 +23,11 @@ ui-tui/packages/hermes-ink/dist/
 
 *.md
 
+# Skills (not included in the Docker image by default; users opt in at
+# runtime via `hermes skills install`).
+skills/
+optional-skills/
+
 # Runtime data (bind-mounted at /opt/data; must not leak into build context)
 data/
 
